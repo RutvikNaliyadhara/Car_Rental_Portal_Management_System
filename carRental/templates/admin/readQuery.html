@@ -1,0 +1,46 @@
+{% extends 'adminNavbar.html' %}
+{% block main %}
+
+<section class="content">
+  <div class="row">
+     <div class="col-xs-12">
+        <div class="box">
+          <div class="box-header">
+             <h3 class="box-title"><i class="fa fa-cab"></i> Read Queries</h3>
+
+           <div class="box-body">
+            <table id="example1" class="table table-bordered table-striped">
+              <thead>
+                <tr style="background-color: #c5c5c5;">
+                 <th>#</th>
+                 <th><i class="fa fa-user"></i> Full Name</th>
+                 <th><i class="fa fa-list-ol"></i> Email Id</th>
+                 <th><i class="fa fa-calendar"></i> Contact No.</th>
+                 <th><i class="fa fa-calendar"></i> Posting Date</th>
+                 <th>Action</th>
+                </tr>
+              </thead>
+
+              <tbody>
+              {% for i in contact %}
+                <tr>
+                  <td>{{forloop.counter}}</td>
+                  <td>{{i.Name}}</td>
+                  <td>{{i.EmailId}}</td>
+                  <td>{{i.ContactNo}}</td>
+                  <td>{{i.PostingDate}}</td>
+                  <td align="center">
+                    <a class="btn btn-primary btn-sm" href="{% url 'viewQuery' i.id %}"><i class="fa fa-eye"></i></a> |
+                      <a class="btn btn-danger btn-sm" href="{% url 'deleteQuery' i.id %}" onclick="return confirm('Are you sure to Delete ?')"><i class="fa fa-trash"></i></a>
+                  </td>
+                </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+     </div>
+  </div>
+  </div>
+</section>
+{% endblock %}

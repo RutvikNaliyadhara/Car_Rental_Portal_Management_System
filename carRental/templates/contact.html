@@ -1,0 +1,145 @@
+{% extends 'base.html' %}
+{% block main %}
+{% load static %}
+
+<div class="container-fluid py-5">
+    <div class="container pt-5 pb-3">
+        <h1 class="display-4 text-uppercase text-center mb-5">Contact Us</h1>
+        <div class="row">
+            <div class="col-lg-7 mb-2">
+                <div class="contact-form bg-light mb-4" style="padding: 30px;">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-6 form-group">
+                                <input type="text" name="Name" class="form-control p-4" placeholder="Your Name" required>
+                            </div>
+                            <div class="col-6 form-group">
+                                <input type="email" name="EmailId" class="form-control p-4" placeholder="Your Email" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <input type="text" name="ContactNo" class="form-control p-4" placeholder="Your Contact Number" maxlength="10" required>
+                        </div>
+                        <div class="form-group">
+                            <textarea name="Message" class="form-control py-3 px-4" rows="5" placeholder="Message" required></textarea>
+                        </div>
+                        <div>
+                            <button class="btn btn-primary py-3 px-5" type="submit">Send Message</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <div class="col-lg-5 mb-2">
+                <div class="bg-secondary d-flex flex-column justify-content-center px-5 mb-4" style="height: 435px;">
+                    <div class="d-flex mb-3">
+                        <i class="fa fa-2x fa-map-marker-alt text-primary flex-shrink-0 mr-3"></i>
+                        <div class="mt-n1">
+                            <h5 class="text-light">Head Office</h5>
+                            <p>Ahmedabad, India</p>
+                        </div>
+                    </div>
+                    <div class="d-flex mb-3">
+                        <i class="fa fa-2x fa-map-marker-alt text-primary flex-shrink-0 mr-3"></i>
+                        <div class="mt-n1">
+                            <h5 class="text-light">Branch Office</h5>
+                            <p>Ahmedabad, India</p>
+                        </div>
+                    </div>
+                    <div class="d-flex mb-3">
+                        <i class="fa fa-2x fa-envelope-open text-primary flex-shrink-0 mr-3"></i>
+                        <div class="mt-n1">
+                            <h5 class="text-light">Customer Service</h5>
+                            <p>abc@gmail.com</p>
+                        </div>
+                    </div>
+                    <div class="d-flex">
+                        <i class="fa fa-2x fa-envelope-open text-primary flex-shrink-0 mr-3"></i>
+                        <div class="mt-n1">
+                            <h5 class="text-light">Return & Refund</h5>
+                            <p>abc@gmail.com</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Contact End -->
+
+<!-- Banner Start -->
+<div class="container-fluid py-5">
+    <div class="container py-5">
+        <div class="row mx-0">
+            <div class="col-lg-6 px-0">
+                <div class="px-5 bg-secondary d-flex align-items-center justify-content-between" style="height: 350px;">
+                    <img class="img-fluid flex-shrink-0 ml-n5 w-50 mr-4" src="{% static 'img/banner-left.png' %}"
+                         alt="">
+                    <div class="text-right">
+                        <h3 class="text-uppercase text-light mb-3">Want to be driver?</h3>
+                        <p class="mb-4">Lorem justo sit sit ipsum eos lorem kasd, kasd labore</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6 px-0">
+                <div class="px-5 bg-dark d-flex align-items-center justify-content-between" style="height: 350px;">
+                    <div class="text-left">
+                        <h3 class="text-uppercase text-light mb-3">Looking for a car?</h3>
+                        <p class="mb-4">Lorem justo sit sit ipsum eos lorem kasd, kasd labore</p>
+                    </div>
+                    <img class="img-fluid flex-shrink-0 mr-n5 w-50 ml-4" src="{% static 'img/banner-right.png' %}"
+                         alt="">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Banner End -->
+
+<!-- Vendor Start -->
+<div class="container-fluid py-5">
+    <div class="container py-5">
+        <div class="owl-carousel vendor-carousel">
+            <div class="bg-light p-4">
+                <img src="{% static 'img/vendor-1.png' %}" alt="">
+            </div>
+            <div class="bg-light p-4">
+                <img src="{% static 'img/vendor-2.png' %}" alt="">
+            </div>
+            <div class="bg-light p-4">
+                <img src="{% static 'img/vendor-3.png' %}" alt="">
+            </div>
+            <div class="bg-light p-4">
+                <img src="{% static 'img/vendor-4.png' %}" alt="">
+            </div>
+            <div class="bg-light p-4">
+                <img src="{% static 'img/vendor-5.png' %}" alt="">
+            </div>
+            <div class="bg-light p-4">
+                <img src="{% static 'img/vendor-6.png' %}" alt="">
+            </div>
+            <div class="bg-light p-4">
+                <img src="{% static 'img/vendor-7.png' %}" alt="">
+            </div>
+            <div class="bg-light p-4">
+                <img src="{% static 'img/vendor-8.png' %}" alt="">
+            </div>
+        </div>
+    </div>
+</div>
+<!-- Vendor End -->
+
+{% if error == "no" %}
+<script>
+    alert('Your Message has been Send Successfully.');
+    window.location=('{% url 'index' %}');
+</script>
+{% endif %}
+
+{% if error == "yes" %}
+<script>
+    alert('Something went wrong. Try Again...');
+</script>
+{% endif %}
+
+{% endblock %}

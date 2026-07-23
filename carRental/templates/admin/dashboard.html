@@ -1,0 +1,111 @@
+{% extends 'adminNavbar.html' %}
+{% block main %}
+{% load static %}
+
+<section class="content-header">
+    <h1 align="center">
+       <i class="fa fa-cab"></i> Dashboard
+    </h1>
+</section>
+
+<!-- Main content -->
+<section class="content">
+  <div class="row">
+     <div class="col-xs-12">
+        <div class="box">
+          <div class="box-header">
+             <h3 class="box-title"><i class="fa fa-cab"></i> Dashboard</h3>
+          </div>
+        </div>
+     </div>
+
+							<div class="col-md-12">
+								<div class="row">
+								    <a href="{% url 'regUser' %}">
+									<div class="col-md-3">
+										<div class="panel panel-default">
+											<div class="panel-body bk-primary text-primary">
+												<div class="stat-panel text-center">
+													<div class="stat-panel-number h1 ">{{totaluser}}</div>
+													<div class="stat-panel-title text-uppercase">Reg Users</div>
+												</div>
+											</div>
+										</div>
+									</div>
+									</a>
+
+									<a href="{% url 'manageVehicle' %}">
+									<div class="col-md-3">
+										<div class="panel panel-default">
+											<div class="panel-body bk-success text-danger">
+												<div class="stat-panel text-center">
+													<div class="stat-panel-number h1 ">{{totalvehicle}}</div>
+													<div class="stat-panel-title text-uppercase">Listed Vehicles</div>
+												</div>
+											</div>
+										</div>
+									</div>
+									</a>
+
+									<a href="{% url 'allBooking' %}">
+									<div class="col-md-3">
+										<div class="panel panel-default">
+											<div class="panel-body bk-info text-success">
+												<div class="stat-panel text-center">
+													<div class="stat-panel-number h1 ">{{totalbooking}}</div>
+													<div class="stat-panel-title text-uppercase">Total Bookings</div>
+												</div>
+											</div>
+										</div>
+									</div>
+									</a>
+
+									<a href="{% url 'brands' %}">
+									<div class="col-md-3">
+										<div class="panel panel-default">
+											<div class="panel-body bk-warning text-warning">
+												<div class="stat-panel text-center">
+													<div class="stat-panel-number h1 ">{{totalbrand}}</div>
+													<div class="stat-panel-title text-uppercase">Listed Brands</div>
+												</div>
+											</div>
+										</div>
+									</div>
+									</a>
+
+                                    <a href="{% url 'unreadQuery' %}">
+									<div class="col-md-3">
+										<div class="panel panel-default">
+											<div class="panel-body bk-success text-light">
+												<div class="stat-panel text-center">
+												    <div class="stat-panel-number h1 ">{{totalunread}}</div>
+													<div class="stat-panel-title text-uppercase">Unread Queries</div>
+												</div>
+											</div>
+										</div>
+									</div>
+                                    </a>
+
+                                    <a href="{% url 'readQuery' %}">
+									<div class="col-md-3">
+										<div class="panel panel-default">
+											<div class="panel-body bk-success text-light">
+												<div class="stat-panel text-center">
+												    <div class="stat-panel-number h1 ">{{totalread}}</div>
+													<div class="stat-panel-title text-uppercase">Read Queries</div>
+												</div>
+											</div>
+										</div>
+									</div>
+									</a>
+
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+		</div>
+     </div>
+  </div>
+</section>
+{% endblock %}

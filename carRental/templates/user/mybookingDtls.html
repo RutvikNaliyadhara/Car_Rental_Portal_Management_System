@@ -1,0 +1,75 @@
+{% extends 'userBase.html' %}
+{% block main %}
+{% load static %}
+{% load custom_filters %}
+
+<!-- Page Header Start -->
+<div class="container-fluid page-header" xmlns="http://www.w3.org/1999/html">
+    <h1 class="display-3 text-uppercase text-white mb-3">My Booking Details</h1>
+    <div class="d-inline-flex text-white">
+        <h6 class="text-uppercase m-0"><a class="text-white" href="{% url 'userindex' %}">Home</a></h6>
+        <h6 class="text-body m-0 px-3">/</h6>
+        <h6 class="text-uppercase text-body m-0">My Booking Details</h6>
+    </div>
+</div>
+<!-- Page Header Start -->
+
+<div class="container-fluid py-2">
+    <div class="container pt-2 pb-3">
+        <h1 class="display-4 text-uppercase text-center mb-2">My Booking Details</h1>
+        <div class="row">
+            <div class="col-lg-12 mb-2">
+                <div class="contact-form bg-light mb-4" style="padding: 30px;">
+                    <table id="example1" class="table table-bordered table-striped">
+                        <tr>
+                            <th>Booking No</th>
+                            <td colspan="3">{{booking.BookingNumber}}</td>
+                        </tr>
+
+                        <tr>
+                            <th>Brand</th>
+                            <td>{{booking.VehicleId.VehiclesBrand.BrandName}}</td>
+
+                            <th>Vehicle Name</th>
+                            <td>{{booking.VehicleId.VehiclesTitle}}</td>
+                        </tr>
+
+                        <tr>
+                            <th>From Date</th>
+                            <td>{{booking.FromDate}}</td>
+
+                            <th>To Date</th>
+                            <td>{{booking.ToDate}}</td>
+                        </tr>
+
+                        <tr>
+                            <th>Message</th>
+                            <td>{{booking.message}}</td>
+
+                            <th>Status</th>
+                            {% if booking.Status == None %}
+                                <td>Not Update Yet</td>
+                            {% else%}
+                                <td>{{booking.Status}}</td>
+                            {% endif %}
+                        </tr>
+
+                        <tr>
+                            <th>Total Days</th>
+                            <td>{{ booking.ToDate|timeuntil:booking.FromDate }}</td>
+
+                            <th>Rent/Days</th>
+                            <td>{{booking.VehicleId.PricePerDay}}</td>
+                        </tr>
+                        <tr>
+                            <th colspan="3" style="text-align:center; color: red">Grand Total</th>
+                            <td>{{grandtotal}} Rs.</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

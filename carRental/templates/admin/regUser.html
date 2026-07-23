@@ -1,0 +1,53 @@
+{% extends 'adminNavbar.html' %}
+{% block main %}
+
+<section class="content">
+  <div class="row">
+     <div class="col-xs-12">
+        <div class="box">
+          <div class="box-header">
+             <h3 class="box-title"><i class="fa fa-user"></i> Register User</h3>
+              <br><br><br>
+           <div class="box-body">
+            <table id="example1" class="table table-bordered table-striped">
+              <thead>
+                <tr style="background-color: #c5c5c5;">
+                 <th>#</th>
+                 <th><i class="fa fa-user"></i> Full Name</th>
+                 <th><i class="fa fa-list-ol"></i> Email Id</th>
+                 <th><i class="fa fa-phone"></i> Contact No.</th>
+                 <th><i class="fa fa-calendar"></i> DOB</th>
+                 <th><i class="fa fa-map-marker"></i> Address</th>
+                 <th><i class="fa fa-map-marker"></i> City</th>
+                 <th><i class="fa fa-map-marker"></i> Country</th>
+                 <th><i class="fa fa-calendar"></i> Reg Date</th>
+                 <th>Action</th>
+                </tr>
+              </thead>
+
+              <tbody>
+              {% for i in userDtls %}
+                <tr>
+                  <td>{{forloop.counter}}</td>
+                  <td>{{i.user.first_name}} {{i.user.last_name}}</td>
+                  <td>{{i.user.username}}</td>
+                  <td>{{i.ContactNo}}</td>
+                  <td>{{i.dob}}</td>
+                  <td>{{i.Address}}</td>
+                  <td>{{i.City}}</td>
+                  <td>{{i.Country}}</td>
+                  <td>{{i.RegDate}}</td>
+                  <td align="center">
+                    <a class="btn btn-danger btn-sm" onclick="return confirm('Are you sure to Delete ?')" href="{% url 'deleteUser' i.user.id %}"><i class="fa fa-trash"></i></a>
+                  </td>
+                </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+     </div>
+  </div>
+  </div>
+</section>
+{% endblock %}

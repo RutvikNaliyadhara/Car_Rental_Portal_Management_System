@@ -1,0 +1,52 @@
+{% extends 'adminNavbar.html' %}
+{% block main %}
+{% load static %}
+
+<section class="content-header">
+    <h1 align="center">
+       <i class="fa fa-cab"></i> Update Brands
+        <small></small>
+    </h1>
+</section>
+
+<section class="content">
+    <div class="row">
+      <div class="col-xs-12">
+        <div class="box">
+         <div class="box-header">
+           <h3 class="box-title"><i class="fa fa-cab"></i> Update Brand</h3>
+             <form method="post">
+            {% csrf_token %}
+              <div class="modal-body">
+                  <div class="box box-primary">
+                    <div class="box-body">
+                      <div class="form-group">
+                        <label>Brand Name</label>
+                        <input type="text" name="BrandName" class="form-control" value="{{brand.BrandName}}">
+                      </div>
+                    </div>
+                  </div>
+              </div>
+              <div class="modal-footer">
+                  <button type="submit" class="btn btn-primary">Update</button>
+              </div>
+            </form>
+         </div>
+        </div>
+      </div>
+    </div>
+</section>
+
+{% if error == "no" %}
+<script>
+    alert('Brand has been Updated');
+    window.location=('{% url 'brands' %}');
+</script>
+{% endif %}
+{% if error == "yes" %}
+<script>
+    alert('Something Went Wrong. Please try again');
+</script>
+{% endif %}
+
+{% endblock %}

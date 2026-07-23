@@ -1,0 +1,55 @@
+{% extends 'adminNavbar.html' %}
+{% block main %}
+
+<section class="content">
+  <div class="row">
+     <div class="col-xs-12">
+        <div class="box">
+          <div class="box-header">
+             <h3 class="box-title"><i class="fa fa-cab"></i> Between Date Report Details</h3>
+
+           <div class="box-body">
+               <h3 class="text-center text-primary">Report From <span style="color:red;">{{fd}}</span> to <span style="color:red;">{{td}}</span></h3>
+            <table id="example1" class="table table-bordered table-striped">
+              <thead>
+                <tr style="background-color: #c5c5c5;">
+                 <th>#</th>
+                 <th><i class="fa fa-user"></i> Full Name</th>
+                 <th><i class="fa fa-list-ol"></i> Booking No.</th>
+                 <th><i class="fa fa-calendar"></i> From Date</th>
+                 <th><i class="fa fa-calendar"></i> To Date</th>
+                 <th><i class="fa fa-list-ol"></i> Status</th>
+                 <th><i class="fa fa-calendar"></i> Posting Date</th>
+                 <th>Action</th>
+                </tr>
+              </thead>
+
+              <tbody>
+              {% for i in booking %}
+                <tr>
+                  <td>{{forloop.counter}}</td>
+                  <td>{{i.user.user.first_name}} {{i.user.user.last_name}}</td>
+                  <td>{{i.BookingNumber}}</td>
+                  <td>{{i.FromDate}}</td>
+                  <td>{{i.ToDate}}</td>
+                  {% if i.Status == None %}
+                    <td>Not Update Yet</td>
+                  {% else %}
+                    <td>{{i.Status}}</td>
+                  {% endif %}
+                  <td>{{i.PostingDate}}</td>
+                  <td align="center">
+                    <a class="btn btn-primary btn-sm" href="{% url 'viewBooking' i.id %}"><i class="fa fa-eye"></i></a>
+                  </td>
+                </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+     </div>
+  </div>
+  </div>
+</section>
+
+{% endblock %}

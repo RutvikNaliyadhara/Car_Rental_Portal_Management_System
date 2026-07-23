@@ -1,0 +1,152 @@
+{% extends 'adminNavbar.html' %}
+{% block main %}
+
+<section class="content">
+    <div class="row">
+        <div class="col-xs-12">
+            <div class="box">
+                <div class="box-header">
+                    <h3 class="box-title"><i class="fa fa-cab"></i> View Booking Details</h3>
+                </div>
+
+                <div class="box-body">
+                    <table id="example1" class="table table-bordered table-striped">
+                        <tr>
+                            <h3 style="text-align: center; color: red">View Booking Details</h3>
+                        </tr>
+                        <tr>
+                            <th>Booking Number</th>
+                            <td>{{bookingDtls.BookingNumber}}</td>
+
+                            <th>Full Name</th>
+                            <td>{{bookingDtls.user.user.first_name}} {{bookingDtls.user.user.last_name}}</td>
+                        </tr>
+
+                        <tr>
+                            <th>Email Id</th>
+                            <td>{{bookingDtls.user.user.username}}</td>
+
+                            <th>Contact No</th>
+                            <td>{{bookingDtls.user.ContactNo}}</td>
+                        </tr>
+
+                        <tr>
+                            <th>Address</th>
+                            <td>{{bookingDtls.user.Address}}</td>
+
+                            <th>City</th>
+                            <td>{{bookingDtls.user.City}}</td>
+                        </tr>
+                        <tr>
+                            <th>Country</th>
+                            <td>{{bookingDtls.user.Country}}</td>
+                        </tr>
+                    </table>
+                    <br>
+                    <table id="example1" class="table table-bordered table-striped">
+                        <tr>
+                            <h4 style="text-align: center; color: red">Booking Details</h4>
+                        </tr>
+                        <tr>
+                            <th>Vehicle Name</th>
+                            <td>{{bookingDtls.VehicleId.VehiclesTitle}}</td>
+
+                            <th>Booking Date</th>
+                            <td>{{bookingDtls.PostingDate}}</td>
+                        </tr>
+
+                        <tr>
+                            <th>From Date</th>
+                            <td>{{bookingDtls.FromDate}}</td>
+
+                            <th>To Date</th>
+                            <td>{{bookingDtls.ToDate}}</td>
+                        </tr>
+
+                        <tr>
+                            <th>Total Days</th>
+                            <td>{{ bookingDtls.ToDate|timeuntil:bookingDtls.FromDate }}</td>
+
+                            <th>Rent Per Days</th>
+                            <td>{{bookingDtls.VehicleId.PricePerDay}}</td>
+                        </tr>
+
+                        <tr>
+                            <th colspan="3" style="text-align:center; color: red">Grand Total</th>
+                            <td>{{grandtotal}} Rs.</td>
+                        </tr>
+
+                        <tr>
+                            <th>Booking Status</th>
+                            {% if bookingDtls.Status == None %}
+                            <td>Not Update Yet</td>
+                            {% else %}
+                            <td>{{bookingDtls.Status}}</td>
+                            {% endif %}
+
+                            <th>Updation Date</th>
+                            <td>{{bookingDtls.LastUpdationDate}}</td>
+                        </tr>
+                    </table>
+
+                    {% if bookingDtls.Status == None %}
+                    <button type="button" class="btn btn-primary btn-sm" style="margin-left: 2%" data-toggle="modal"
+                            data-target="#add">
+                        Take Action
+                    </button>
+                    {% endif %}
+
+                   <div class="modal fade" id="add">
+                        <div class="modal-dialog">
+                            <form method="post">
+                                {% csrf_token %}
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                            <span aria-hidden="true">&times;</span></button>
+                                        <h4 class="modal-title">Update Status</h4>
+                                    </div>
+
+                                    <div class="modal-body">
+                                        <div class="box box-primary">
+                                            <div class="box-body">
+                                                <div class="form-group">
+                                                    <label>Status</label>
+                                                    <select name="Status" class="form-control">
+                                                        <option value="Confirm">Confirm</option>
+                                                        <option value="Cancel">Cancel</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-danger pull-left" data-dismiss="modal">
+                                            Close
+                                        </button>
+                                        <button type="submit" class="btn btn-primary">Submit</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% if error == "no" %}
+<script>
+    alert('Your Status has been Updated');
+</script>
+{% endif %}
+
+{% if error == "yes" %}
+<script>
+    alert('Something Went Wrong. Please try again');
+</script>
+{% endif %}
+
+{% endblock %}
