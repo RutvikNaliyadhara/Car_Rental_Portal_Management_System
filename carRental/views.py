@@ -1,12 +1,20 @@
 import datetime
+from datetime import datetime as dt, date
+import json
 import random
 
 from django.contrib.auth import authenticate, logout, login
-from django.db.models import Q
-from django.shortcuts import render, redirect
+from django.db import transaction
+from django.db.models import Q, Case, When
+from django.shortcuts import render, redirect, HttpResponse
 from django.contrib.auth.models import User
 from .models import *
-from datetime import date
+import io
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, HRFlowable
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.units import mm
 
 
 # Create your views here.
@@ -34,11 +42,36 @@ def carlist(request):
     return render(request, 'carlist.html', locals())
 
 
+def auto_complete_expired_bookings():
+    try:
+        Booking.objects.filter(Status='Confirm', ToDate__lt=date.today()).update(
+            Status='Completed',
+            LastUpdationDate=date.today()
+        )
+    except Exception:
+        pass
+
+
 def carDetails(request, pid):
+    auto_complete_expired_bookings()
     vehicle = Vehicles.objects.get(id=pid)
     vehicleid = vehicle.id
     vehiclebrand = vehicle.VehiclesBrand
-    similarvehicle = Vehicles.objects.filter(~Q(id=vehicleid), VehiclesBrand=vehiclebrand)
+    similarvehicle = Vehicles.objects.exclude(id=vehicleid).order_by(
+        Case(
+            When(VehiclesBrand=vehiclebrand, then=0),
+            default=1
+        ),
+        '-id'
+    )
+    if not similarvehicle.exists():
+        similarvehicle = Vehicles.objects.all()
+    today = date.today().strftime('%Y-%m-%d')
+    today_date = date.today()
+    existing_bookings = Booking.objects.filter(
+        VehicleId=vehicle,
+        ToDate__gte=today_date
+    ).exclude(Status__in=['Cancel', 'Completed']).order_by('FromDate')
     return render(request, 'carDetails.html', locals())
 
 
@@ -77,24 +110,52 @@ def admin_login(request):
 
 def signup(request):
     error = ""
+    error_msg = ""
     if request.method == "POST":
-        fname = request.POST['firstName']
-        lname = request.POST['lastName']
-        ContactNo = request.POST['ContactNo']
-        dob = request.POST['dob']
-        email = request.POST['emailid']
-        password = request.POST['password']
-        Country = request.POST['Country']
-        City = request.POST['City']
-        Address = request.POST['Address']
+        fname = request.POST.get('firstName', '').strip()
+        lname = request.POST.get('lastName', '').strip()
+        ContactNo = request.POST.get('ContactNo', '').strip()
+        dob = request.POST.get('dob', '').strip()
+        email = request.POST.get('emailid', '').strip()
+        password = request.POST.get('password', '').strip()
+        Country = request.POST.get('Country', '').strip()
+        City = request.POST.get('City', '').strip()
+        Address = request.POST.get('Address', '').strip()
 
-        try:
-            user = User.objects.create_user(username=email, password=password, first_name=fname, last_name=lname)
-            UserDetails.objects.create(user=user, ContactNo=ContactNo, dob=dob, Country=Country, City=City,
-                                       Address=Address)
-            error = "no"
-        except:
-            error = "yes"
+        if User.objects.filter(username__iexact=email).exists() or User.objects.filter(email__iexact=email).exists():
+            error = "user_exists"
+            error_msg = f"An account with email '{email}' already exists! Please login instead."
+        else:
+            dob_date = None
+            if dob:
+                for fmt in ('%Y-%m-%d', '%d-%m-%Y', '%d/%m/%Y', '%Y/%m/%d'):
+                    try:
+                        dob_date = dt.strptime(dob, fmt).date()
+                        break
+                    except ValueError:
+                        pass
+
+            try:
+                with transaction.atomic():
+                    user = User.objects.create_user(
+                        username=email,
+                        email=email,
+                        password=password,
+                        first_name=fname,
+                        last_name=lname
+                    )
+                    UserDetails.objects.create(
+                        user=user,
+                        ContactNo=ContactNo,
+                        dob=dob_date,
+                        Country=Country,
+                        City=City,
+                        Address=Address
+                    )
+                    error = "no"
+            except Exception as e:
+                error = "yes"
+                error_msg = str(e)
     return render(request, 'signup.html', locals())
 
 
@@ -434,32 +495,62 @@ def newBooking(request):
 def confirmBooking(request):
     if not request.user.is_authenticated:
         return redirect('admin_login')
-    booking = Booking.objects.filter(Status='Confirm')
+    auto_complete_expired_bookings()
+    booking = Booking.objects.filter(Status='Confirm').order_by('-id')
     return render(request, 'admin/confirmBooking.html', locals())
+
+
+def completedBooking(request):
+    if not request.user.is_authenticated:
+        return redirect('admin_login')
+    auto_complete_expired_bookings()
+    booking = Booking.objects.filter(Status='Completed').order_by('-id')
+    return render(request, 'admin/completedBooking.html', locals())
+
+
+def releaseBooking(request, pid):
+    if not request.user.is_authenticated:
+        return redirect('admin_login')
+    try:
+        b = Booking.objects.get(id=pid)
+        b.Status = 'Completed'
+        b.LastUpdationDate = date.today()
+        b.save()
+    except Booking.DoesNotExist:
+        pass
+    next_page = request.GET.get('next', '')
+    if next_page == 'allBooking':
+        return redirect('allBooking')
+    elif next_page == 'confirmBooking':
+        return redirect('confirmBooking')
+    return redirect('viewBooking', pid=pid)
 
 
 def cancelBooking(request):
     if not request.user.is_authenticated:
         return redirect('admin_login')
-    booking = Booking.objects.filter(Status='Cancel')
+    booking = Booking.objects.filter(Status='Cancel').order_by('-id')
     return render(request, 'admin/cancelBooking.html', locals())
 
 
 def allBooking(request):
     if not request.user.is_authenticated:
         return redirect('admin_login')
-    booking = Booking.objects.all()
+    auto_complete_expired_bookings()
+    booking = Booking.objects.all().order_by('-id')
     return render(request, 'admin/allBooking.html', locals())
 
 
 def viewBooking(request, pid):
     if not request.user.is_authenticated:
         return redirect('admin_login')
+    auto_complete_expired_bookings()
     bookingDtls = Booking.objects.get(id=pid)
     fd = bookingDtls.FromDate
     td = bookingDtls.ToDate
-    totaldays = td - fd
-    totaldays = str(totaldays)[0:1]
+    totaldays = (td - fd).days if (td and fd) else 1
+    if totaldays <= 0:
+        totaldays = 1
     grandtotal = int(bookingDtls.VehicleId.PricePerDay) * int(totaldays)
     error = ""
     if request.method == "POST":
@@ -592,20 +683,100 @@ def vehicleDetails(request, pid):
     vehicle = Vehicles.objects.get(id=pid)
     vehicleid = vehicle.id
     vehiclebrand = vehicle.VehiclesBrand
-    similarvehicle = Vehicles.objects.filter(~Q(id=vehicleid), VehiclesBrand=vehiclebrand)
+    similarvehicle = Vehicles.objects.exclude(id=vehicleid).order_by(
+        Case(
+            When(VehiclesBrand=vehiclebrand, then=0),
+            default=1
+        ),
+        '-id'
+    )
+    if not similarvehicle.exists():
+        similarvehicle = Vehicles.objects.all()
 
     users = User.objects.get(id=request.user.id)
-    userdtls = UserDetails.objects.get(user=users)
+    userdtls = UserDetails.objects.filter(user=users).first()
+    if not userdtls:
+        userdtls = UserDetails.objects.create(user=users, ContactNo="")
+
+    auto_complete_expired_bookings()
+    today = date.today().strftime('%Y-%m-%d')
+    today_date = date.today()
+
+    existing_bookings = Booking.objects.filter(
+        VehicleId=vehicle,
+        ToDate__gte=today_date
+    ).exclude(Status__in=['Cancel', 'Completed']).order_by('FromDate')
+
+    booked_ranges = []
+    for b in existing_bookings:
+        if b.FromDate and b.ToDate:
+            booked_ranges.append({
+                'from': b.FromDate.strftime('%Y-%m-%d'),
+                'to': b.ToDate.strftime('%Y-%m-%d'),
+                'from_display': b.FromDate.strftime('%d-%m-%Y'),
+                'to_display': b.ToDate.strftime('%d-%m-%Y')
+            })
+    booked_ranges_json = json.dumps(booked_ranges)
+
+    error = ""
+    conflict_info = ""
+
     if request.method == "POST":
-        FromDate = request.POST['FromDate']
-        ToDate = request.POST['ToDate']
-        message = request.POST['message']
-        bookingNo = str(random.randint(10000000, 99999999))
+        FromDate_str = request.POST.get('FromDate')
+        ToDate_str = request.POST.get('ToDate')
+        message = request.POST.get('message', '')
+
         try:
-            Booking.objects.create(user=userdtls, VehicleId=vehicle, FromDate=FromDate, ToDate=ToDate, message=message,
-                                   BookingNumber=bookingNo)
-            error = "no"
-        except:
+            req_from = dt.strptime(FromDate_str, '%Y-%m-%d').date()
+            req_to = dt.strptime(ToDate_str, '%Y-%m-%d').date()
+
+            if req_to < req_from:
+                error = "invalid_dates"
+            elif req_from < today_date:
+                error = "past_date"
+            else:
+                conflicts = Booking.objects.filter(
+                    VehicleId=vehicle,
+                    FromDate__lte=req_to,
+                    ToDate__gte=req_from
+                ).exclude(Status__in=['Cancel', 'Completed'])
+
+                if conflicts.exists():
+                    error = "already_booked"
+                    c = conflicts.first()
+                    conflict_info = f"{c.FromDate.strftime('%d-%m-%Y')} to {c.ToDate.strftime('%d-%m-%Y')}"
+                else:
+                    bookingNo = str(random.randint(10000000, 99999999))
+                    diff_days = (req_to - req_from).days
+                    totaldays = max(1, diff_days)
+                    grandtotal = int(vehicle.PricePerDay) * int(totaldays)
+                    new_booking = Booking.objects.create(
+                        user=userdtls,
+                        VehicleId=vehicle,
+                        FromDate=req_from,
+                        ToDate=req_to,
+                        message=message,
+                        BookingNumber=bookingNo,
+                        TotalAmount=str(grandtotal),
+                        PaymentStatus="Pending"
+                    )
+                    booking_id = new_booking.id
+                    error = "no"
+                    existing_bookings = Booking.objects.filter(
+                        VehicleId=vehicle,
+                        ToDate__gte=today_date
+                    ).exclude(Status__in=['Cancel', 'Completed']).order_by('FromDate')
+                    booked_ranges = []
+                    for b in existing_bookings:
+                        if b.FromDate and b.ToDate:
+                            booked_ranges.append({
+                                'from': b.FromDate.strftime('%Y-%m-%d'),
+                                'to': b.ToDate.strftime('%Y-%m-%d'),
+                                'from_display': b.FromDate.strftime('%d-%m-%Y'),
+                                'to_display': b.ToDate.strftime('%d-%m-%Y')
+                            })
+                    booked_ranges_json = json.dumps(booked_ranges)
+        except Exception:
             error = "yes"
     return render(request, 'user/vehicleDetails.html', locals())
 
@@ -665,9 +836,10 @@ def myProfile(request):
 def myBooking(request):
     if not request.user.is_authenticated:
         return redirect('user_login')
+    auto_complete_expired_bookings()
     user = User.objects.get(id=request.user.id)
     userDtls = UserDetails.objects.get(user=user)
-    booking = Booking.objects.filter(user=userDtls)
+    booking = Booking.objects.filter(user=userDtls).order_by('-id')
     return render(request, 'user/myBooking.html', locals())
 
 
@@ -677,8 +849,9 @@ def mybookingDtls(request, pid):
     booking = Booking.objects.get(id=pid)
     fd = booking.FromDate
     td = booking.ToDate
-    totaldays = td - fd
-    totaldays = str(totaldays)[0:1]
+    totaldays = (td - fd).days if (td and fd) else 1
+    if totaldays <= 0:
+        totaldays = 1
     grandtotal = int(booking.VehicleId.PricePerDay) * int(totaldays)
     return render(request, 'user/mybookingDtls.html', locals())
 
@@ -702,3 +875,288 @@ def mychangePassword(request):
         except:
             error = "yes"
     return render(request, 'user/mychangePassword.html', locals())
+
+
+def bookingPayment(request, pid):
+    if not request.user.is_authenticated:
+        return redirect('user_login')
+    try:
+        booking = Booking.objects.get(id=pid)
+    except Booking.DoesNotExist:
+        return redirect('myBooking')
+
+    vehicle = booking.VehicleId
+    fd = booking.FromDate
+    td = booking.ToDate
+    diff_days = (td - fd).days if (td and fd) else 1
+    totaldays = max(1, diff_days)
+    grandtotal = int(vehicle.PricePerDay) * int(totaldays)
+
+    if not booking.TotalAmount:
+        booking.TotalAmount = str(grandtotal)
+        booking.save()
+
+    error = ""
+    if request.method == "POST":
+        payment_mode = request.POST.get('payment_mode', 'UPI')
+        if payment_mode == "Pay on Pickup":
+            booking.PaymentStatus = "Pay on Pickup"
+            booking.PaymentMode = "Pay on Pickup (Cash / Card)"
+            booking.TransactionId = "POP" + str(random.randint(10000000, 99999999))
+            booking.Status = "Confirm"
+        else:
+            prefix = "UPI" if "UPI" in payment_mode else ("CARD" if "Card" in payment_mode else "NB")
+            booking.PaymentStatus = "Paid"
+            booking.PaymentMode = payment_mode
+            booking.TransactionId = prefix + str(random.randint(1000000000, 9999999999))
+            booking.Status = "Confirm"
+
+        booking.TotalAmount = str(grandtotal)
+        booking.LastUpdationDate = date.today()
+        booking.save()
+        return redirect('bookingInvoice', pid=booking.id)
+
+    return render(request, 'user/bookingPayment.html', locals())
+
+
+def bookingInvoice(request, pid):
+    if not request.user.is_authenticated:
+        return redirect('user_login')
+    try:
+        booking = Booking.objects.get(id=pid)
+    except Booking.DoesNotExist:
+        return redirect('myBooking')
+
+    vehicle = booking.VehicleId
+    fd = booking.FromDate
+    td = booking.ToDate
+    diff_days = (td - fd).days if (td and fd) else 1
+    totaldays = max(1, diff_days)
+    grandtotal = int(vehicle.PricePerDay) * int(totaldays)
+
+    return render(request, 'user/bookingInvoice.html', locals())
+
+
+def downloadInvoicePDF(request, pid):
+    if not request.user.is_authenticated:
+        return redirect('user_login')
+    try:
+        booking = Booking.objects.get(id=pid)
+    except Booking.DoesNotExist:
+        return redirect('myBooking')
+
+    # Security check: User must own the booking or be admin/staff
+    if not request.user.is_staff and booking.user and booking.user.user != request.user:
+        return redirect('myBooking')
+
+    vehicle = booking.VehicleId
+    user = booking.user.user if (booking.user and booking.user.user) else None
+    userdtls = booking.user
+
+    fd = booking.FromDate
+    td = booking.ToDate
+    diff_days = (td - fd).days if (td and fd) else 1
+    totaldays = max(1, diff_days)
+    daily_price = int(vehicle.PricePerDay) if (vehicle and vehicle.PricePerDay) else 0
+    grandtotal = daily_price * totaldays
+
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        leftMargin=14 * mm,
+        rightMargin=14 * mm,
+        topMargin=14 * mm,
+        bottomMargin=14 * mm
+    )
+
+    elements = []
+    styles = getSampleStyleSheet()
+
+    c_orange = colors.HexColor('#f77d0a')
+    c_dark = colors.HexColor('#2b2e4a')
+    c_gray = colors.HexColor('#6c757d')
+    c_border = colors.HexColor('#dee2e6')
+
+    s_title = ParagraphStyle('LogoTitle', fontName='Helvetica-Bold', fontSize=22, leading=26)
+    s_subtitle = ParagraphStyle('Sub', fontName='Helvetica', fontSize=8, leading=11, textColor=c_gray)
+    s_inv_no = ParagraphStyle('InvNo', fontName='Helvetica-Bold', fontSize=12, leading=15, textColor=c_dark, alignment=2)
+    s_date = ParagraphStyle('InvDate', fontName='Helvetica', fontSize=8, leading=11, textColor=c_gray, alignment=2)
+    s_section_hdr = ParagraphStyle('SecHdr', fontName='Helvetica-Bold', fontSize=9, textColor=c_gray, spaceAfter=4)
+    s_bold_dark = ParagraphStyle('BoldDark', fontName='Helvetica-Bold', fontSize=12, textColor=c_dark)
+    s_body = ParagraphStyle('BodyText', fontName='Helvetica', fontSize=8.5, leading=12, textColor=colors.HexColor('#333333'))
+    s_body_right = ParagraphStyle('BodyRight', fontName='Helvetica', fontSize=8.5, leading=12, textColor=colors.HexColor('#333333'), alignment=2)
+
+    s_th = ParagraphStyle('TH', fontName='Helvetica-Bold', fontSize=8.5, leading=11, textColor=c_dark)
+    s_th_center = ParagraphStyle('THC', fontName='Helvetica-Bold', fontSize=8.5, leading=11, textColor=c_dark, alignment=1)
+    s_th_right = ParagraphStyle('THR', fontName='Helvetica-Bold', fontSize=8.5, leading=11, textColor=c_dark, alignment=2)
+    s_td = ParagraphStyle('TD', fontName='Helvetica', fontSize=8.5, leading=11, textColor=colors.HexColor('#333333'))
+    s_td_bold = ParagraphStyle('TDBold', fontName='Helvetica-Bold', fontSize=9, leading=12, textColor=c_dark)
+    s_td_center = ParagraphStyle('TDC', fontName='Helvetica', fontSize=8.5, leading=11, textColor=colors.HexColor('#333333'), alignment=1)
+    s_td_right = ParagraphStyle('TDR', fontName='Helvetica', fontSize=8.5, leading=11, textColor=colors.HexColor('#333333'), alignment=2)
+    s_td_right_bold = ParagraphStyle('TDRB', fontName='Helvetica-Bold', fontSize=9, leading=12, textColor=c_dark, alignment=2)
+    s_td_grand = ParagraphStyle('TDRG', fontName='Helvetica-Bold', fontSize=13, leading=15, textColor=c_orange, alignment=2)
+
+    # Header
+    logo_p = Paragraph('<font color="#f77d0a"><b>Ride</b></font><font color="#2b2e4a"><b>OnRent</b></font>', s_title)
+    sub_p = Paragraph('Car Rental Portal Management System<br/>Support: support@rideonrent.com | +91 98765 43210', s_subtitle)
+    left_header = [logo_p, Spacer(1, 2 * mm), sub_p]
+
+    posting_str = booking.PostingDate.strftime('%d %b %Y, %I:%M %p') if booking.PostingDate else ''
+    badge_html = '<font color="#f77d0a"><b>TAX INVOICE</b></font>'
+    inv_no_p = Paragraph(f'Invoice No: INV-{booking.BookingNumber}', s_inv_no)
+    date_p = Paragraph(f'Date: {posting_str}', s_date)
+    right_header = [Paragraph(badge_html, s_inv_no), Spacer(1, 1 * mm), inv_no_p, date_p]
+
+    header_table = Table([[left_header, right_header]], colWidths=[100 * mm, 82 * mm])
+    header_table.setStyle(TableStyle([
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('LEFTPADDING', (0, 0), (-1, -1), 0),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+    ]))
+    elements.append(header_table)
+    elements.append(HRFlowable(width='100%', thickness=1, color=c_border, spaceAfter=8, spaceBefore=4))
+
+    # Customer & Payment Summary
+    cust_name = f'{user.first_name} {user.last_name}'.strip() if user else 'Registered Customer'
+    cust_email = user.username if user else 'N/A'
+    cust_phone = userdtls.ContactNo if userdtls and userdtls.ContactNo and userdtls.ContactNo != 'None' else 'Not Provided'
+    addr_parts = []
+    if userdtls:
+        if userdtls.Address and userdtls.Address != 'None': addr_parts.append(userdtls.Address)
+        if userdtls.City and userdtls.City != 'None': addr_parts.append(userdtls.City)
+        if userdtls.Country and userdtls.Country != 'None': addr_parts.append(userdtls.Country)
+    cust_address = ', '.join(addr_parts) if addr_parts else 'Registered Member'
+
+    cust_info = [
+        Paragraph('CUSTOMER DETAILS:', s_section_hdr),
+        Paragraph(cust_name, s_bold_dark),
+        Spacer(1, 1 * mm),
+        Paragraph(f'Email: {cust_email}', s_body),
+        Paragraph(f'Phone: {cust_phone}', s_body),
+        Paragraph(f'Address: {cust_address}', s_body),
+    ]
+
+    pay_status = booking.PaymentStatus or 'Pending'
+    status_color = '#198754' if pay_status == 'Paid' else ('#0d6efd' if pay_status == 'Pay on Pickup' else '#ffc107')
+    pay_mode = booking.PaymentMode or 'Online'
+    txn_id = booking.TransactionId or 'N/A'
+    book_status = booking.Status or 'Confirmed'
+
+    pay_info = [
+        Paragraph('PAYMENT SUMMARY:', s_section_hdr),
+        Paragraph(f'Payment Status: <font color="{status_color}"><b>{pay_status.upper()}</b></font>', s_body_right),
+        Paragraph(f'Payment Mode: <b>{pay_mode}</b>', s_body_right),
+        Paragraph(f'Transaction ID: <b>{txn_id}</b>', s_body_right),
+        Paragraph(f'Booking Status: <b>{book_status}</b>', s_body_right),
+    ]
+
+    info_table = Table([[cust_info, pay_info]], colWidths=[96 * mm, 86 * mm])
+    info_table.setStyle(TableStyle([
+        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+        ('LEFTPADDING', (0, 0), (-1, -1), 0),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 8),
+    ]))
+    elements.append(info_table)
+    elements.append(Spacer(1, 4 * mm))
+
+    # Vehicle Table
+    v_title = vehicle.VehiclesTitle if vehicle else 'Rental Vehicle'
+    v_brand = vehicle.VehiclesBrand.BrandName if vehicle and vehicle.VehiclesBrand else ''
+    v_year = vehicle.ModelYear if vehicle else ''
+    v_fuel = vehicle.FuelType if vehicle else ''
+    desc_html = f'<b>{v_title}</b><br/><font size="7.5" color="#6c757d">Brand: {v_brand} | Year: {v_year} | Fuel: {v_fuel}<br/>Booking No: #{booking.BookingNumber}</font>'
+
+    from_str = fd.strftime('%d %b %Y') if fd else ''
+    to_str = td.strftime('%d %b %Y') if td else ''
+    period_html = f'{from_str} to<br/>{to_str}'
+
+    table_data = [
+        [
+            Paragraph('#', s_th),
+            Paragraph('Vehicle Description', s_th),
+            Paragraph('Rental Period', s_th_center),
+            Paragraph('Duration', s_th_center),
+            Paragraph('Rate / Day', s_th_right),
+            Paragraph('Total', s_th_right)
+        ],
+        [
+            Paragraph('1', s_td),
+            Paragraph(desc_html, s_td),
+            Paragraph(period_html, s_td_center),
+            Paragraph(f'<b>{totaldays} Day{"s" if totaldays > 1 else ""}</b>', s_td_center),
+            Paragraph(f'Rs. {daily_price}', s_td_right),
+            Paragraph(f'<b>Rs. {grandtotal}</b>', s_td_right_bold)
+        ],
+        [
+            '', '', '', '',
+            Paragraph('Subtotal:', s_td_right_bold),
+            Paragraph(f'<b>Rs. {grandtotal}</b>', s_td_right_bold)
+        ],
+        [
+            '', '', '', '',
+            Paragraph('Taxes & GST:', s_td_right_bold),
+            Paragraph('<font color="#198754"><b>Included</b></font>', s_td_right_bold)
+        ],
+        [
+            '', '', '', '',
+            Paragraph('<b>Grand Total:</b>', ParagraphStyle('GT', fontName='Helvetica-Bold', fontSize=10, textColor=c_dark, alignment=2)),
+            Paragraph(f'<b>Rs. {grandtotal}</b>', s_td_grand)
+        ]
+    ]
+
+    col_widths = [10 * mm, 68 * mm, 36 * mm, 22 * mm, 22 * mm, 24 * mm]
+    booking_table = Table(table_data, colWidths=col_widths)
+    booking_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#f1f3f5')),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('GRID', (0, 0), (-1, 1), 0.5, c_border),
+        ('GRID', (4, 2), (-1, -1), 0.5, c_border),
+        ('BACKGROUND', (4, -1), (-1, -1), colors.HexColor('#fff8e1')),
+        ('TOPPADDING', (0, 0), (-1, -1), 5),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+    ]))
+    elements.append(booking_table)
+    elements.append(Spacer(1, 6 * mm))
+
+    # Terms
+    terms_html = '<b>Rental Instructions & Terms:</b><br/>' \
+                 '• Please carry your original valid Driving License and Govt ID during vehicle pick-up.<br/>' \
+                 f'• Vehicle return scheduled on or before: <b>{to_str}</b>.<br/>' \
+                 '• 24/7 Roadside Assistance: <b>1800-123-RENT</b> | support@rideonrent.com'
+    terms_table = Table([[Paragraph(terms_html, s_body)]], colWidths=[182 * mm])
+    terms_table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor('#f8f9fa')),
+        ('BOX', (0, 0), (-1, -1), 0.5, c_border),
+        ('TOPPADDING', (0, 0), (-1, -1), 6),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+        ('LEFTPADDING', (0, 0), (-1, -1), 8),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 8),
+    ]))
+    elements.append(terms_table)
+    elements.append(Spacer(1, 6 * mm))
+
+    # Signatures
+    sig_data = [
+        [
+            Paragraph('<font size="7.5" color="#6c757d">Computer-generated tax invoice. No signature required.</font>', styles['Normal']),
+            Paragraph('<b>Authorized Signatory</b><br/><font size="7.5" color="#6c757d">RideOnRent Car Rental Portal</font>', ParagraphStyle('Sig', fontName='Helvetica', fontSize=8, alignment=2))
+        ]
+    ]
+    sig_table = Table(sig_data, colWidths=[110 * mm, 72 * mm])
+    sig_table.setStyle(TableStyle([
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('LEFTPADDING', (0, 0), (-1, -1), 0),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 0),
+    ]))
+    elements.append(sig_table)
+
+    doc.build(elements)
+    pdf_bytes = buffer.getvalue()
+    buffer.close()
+
+    response = HttpResponse(pdf_bytes, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="RideOnRent_Invoice_{booking.BookingNumber}.pdf"'
+    return response

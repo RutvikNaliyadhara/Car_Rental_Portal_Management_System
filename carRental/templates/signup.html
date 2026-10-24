@@ -19,49 +19,69 @@
             </div>
 
             <div class="col-lg-6 mb-2">
-                <div class="contact-form bg-light mb-4" style="padding: 30px;">
+                <div class="contact-form bg-light mb-4" style="padding: 30px; border-radius: 8px;">
+                    {% if error == "user_exists" %}
+                    <div class="alert alert-danger py-2 px-3 mb-3" style="font-size: 14px;">
+                        <i class="fa fa-exclamation-triangle mr-1"></i> {{ error_msg }}
+                    </div>
+                    {% elif error == "yes" %}
+                    <div class="alert alert-danger py-2 px-3 mb-3" style="font-size: 14px;">
+                        <i class="fa fa-exclamation-circle mr-1"></i> {{ error_msg|default:"Registration failed. Please check your input." }}
+                    </div>
+                    {% endif %}
+
                     <form method="post">
                         {% csrf_token %}
                         <div class="row">
                             <div class="col-6 form-group">
-                                <input type="text" name="firstName" class="form-control p-4" placeholder="Your First Name" required>
+                                <label class="font-weight-bold mb-1" style="font-size: 13px;">First Name:</label>
+                                <input type="text" name="firstName" value="{{ fname }}" class="form-control p-4" placeholder="Your First Name" required>
                             </div>
                             <div class="col-6 form-group">
-                                <input type="text" name="lastName" class="form-control p-4" placeholder="Your Last Name" required>
+                                <label class="font-weight-bold mb-1" style="font-size: 13px;">Last Name:</label>
+                                <input type="text" name="lastName" value="{{ lname }}" class="form-control p-4" placeholder="Your Last Name" required>
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-6 form-group">
-                                <input type="text" name="ContactNo" class="form-control p-4" placeholder="Your Contact Number" maxlength="10" required>
+                                <label class="font-weight-bold mb-1" style="font-size: 13px;">Contact Number:</label>
+                                <input type="text" name="ContactNo" value="{{ ContactNo }}" class="form-control p-4" placeholder="Your Contact Number" maxlength="12" required>
                             </div>
                             <div class="col-6 form-group">
-                                <input type="text" name="dob" onfocus="(this.type='date')" class="form-control p-4" placeholder="Your Date of Birth" required>
+                                <label class="font-weight-bold mb-1" style="font-size: 13px;">Date of Birth:</label>
+                                <input type="date" name="dob" value="{{ dob }}" class="form-control p-4" placeholder="Your Date of Birth" required>
                             </div>
                         </div>
 
                         <div class="row">
                             <div class="col-6 form-group">
-                                <input type="email" name="emailid" class="form-control p-4" placeholder="Your Email" required>
+                                <label class="font-weight-bold mb-1" style="font-size: 13px;">Email Address:</label>
+                                <input type="email" name="emailid" value="{{ email }}" class="form-control p-4" placeholder="Your Email" required>
                             </div>
                             <div class="col-6 form-group">
+                                <label class="font-weight-bold mb-1" style="font-size: 13px;">Password:</label>
                                 <input type="password" name="password" class="form-control p-4" placeholder="Your Password" required>
                             </div>
                         </div>
 
                         <div class="row">
                             <div class="col-6 form-group">
-                                <input type="text" name="Country" class="form-control p-4" placeholder="Your Country" required>
+                                <label class="font-weight-bold mb-1" style="font-size: 13px;">Country:</label>
+                                <input type="text" name="Country" value="{{ Country }}" class="form-control p-4" placeholder="Your Country" required>
                             </div>
                             <div class="col-6 form-group">
-                                <input type="text" name="City" class="form-control p-4" placeholder="Your City" required>
+                                <label class="font-weight-bold mb-1" style="font-size: 13px;">City:</label>
+                                <input type="text" name="City" value="{{ City }}" class="form-control p-4" placeholder="Your City" required>
                             </div>
                         </div>
 
                         <div class="form-group">
-                            <textarea name="Address" class="form-control py-3 px-4" rows="3" placeholder="Your Address" required></textarea>
+                            <label class="font-weight-bold mb-1" style="font-size: 13px;">Address:</label>
+                            <textarea name="Address" class="form-control py-3 px-4" rows="3" placeholder="Your Address" required>{{ Address }}</textarea>
                         </div>
-                        <div>
-                            <button class="btn btn-primary py-3 px-5" type="submit">Submit</button>
+                        <div class="d-flex align-items-center justify-content-between">
+                            <button class="btn btn-primary py-3 px-5 font-weight-bold" type="submit">Submit</button>
+                            <span style="font-size: 14px;">Already registered? <a href="{% url 'user_login' %}" class="text-primary font-weight-bold">Login here</a></span>
                         </div>
                     </form>
                 </div>
@@ -106,14 +126,20 @@
 
 {% if error == "no" %}
 <script>
-    alert('Registration Successfully.');
-    window.location=('{% url 'user_login' %}');
+    alert('Registration Successful! Please login with your email and password.');
+    window.location = '{% url 'user_login' %}';
+</script>
+{% endif %}
+
+{% if error == "user_exists" %}
+<script>
+    alert('⚠️ {{ error_msg|escapejs }}');
 </script>
 {% endif %}
 
 {% if error == "yes" %}
 <script>
-    alert('Something went wrong. Try Again...');
+    alert('⚠️ Registration failed: {{ error_msg|default:"Something went wrong. Try Again..."|escapejs }}');
 </script>
 {% endif %}
 

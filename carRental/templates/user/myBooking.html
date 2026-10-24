@@ -24,10 +24,11 @@
                         <tr style="background-color: #c5c5c5;">
                             <th>#</th>
                             <th><i class="fa fa-list-ol"></i> Booking No.</th>
-                            <th><i class="fa fa-list-ol"></i> Vehicle</th>
+                            <th><i class="fa fa-car"></i> Vehicle</th>
                             <th><i class="fa fa-calendar"></i> From Date</th>
                             <th><i class="fa fa-calendar"></i> To Date</th>
-                            <th><i class="fa fa-list-ol"></i> Status</th>
+                            <th><i class="fa fa-info-circle"></i> Booking Status</th>
+                            <th><i class="fa fa-money"></i> Payment</th>
                             <th><i class="fa fa-calendar"></i> Booking Date</th>
                             <th>Action</th>
                         </tr>
@@ -36,20 +37,41 @@
                         {% for i in booking %}
                         <tr>
                             <td>{{forloop.counter}}</td>
-                            <td>{{i.BookingNumber}}</td>
+                            <td><strong>{{i.BookingNumber}}</strong></td>
                             <td>{{i.VehicleId.VehiclesTitle}}</td>
-                            <td>{{i.FromDate}}</td>
-                            <td>{{i.ToDate}}</td>
+                            <td>{{i.FromDate|date:"d-m-Y"}}</td>
+                            <td>{{i.ToDate|date:"d-m-Y"}}</td>
 
-                            {% if i.Status == None %}
-                                <td>Not Update Yet</td>
-                            {% else %}
-                                <td>{{i.Status}}</td>
-                            {% endif %}
+                            <td>
+                                {% if i.Status == 'Confirm' %}
+                                    <span class="badge badge-primary px-2 py-1"><i class="fa fa-check"></i> Confirmed</span>
+                                {% elif i.Status == 'Completed' %}
+                                    <span class="badge badge-success px-2 py-1"><i class="fa fa-check-circle"></i> Completed (Car Returned)</span>
+                                {% elif i.Status == 'Cancel' %}
+                                    <span class="badge badge-danger px-2 py-1"><i class="fa fa-times"></i> Cancelled</span>
+                                {% else %}
+                                    <span class="badge badge-secondary px-2 py-1">Pending Approval</span>
+                                {% endif %}
+                            </td>
 
-                            <td>{{i.PostingDate}}</td>
+                            <td>
+                                {% if i.PaymentStatus == 'Paid' %}
+                                    <span class="badge badge-success px-2 py-1"><i class="fa fa-check-circle"></i> Paid</span>
+                                    {% if i.TotalAmount %}<small class="d-block text-muted">₹{{ i.TotalAmount }}</small>{% endif %}
+                                {% elif i.PaymentStatus == 'Pay on Pickup' %}
+                                    <span class="badge badge-info px-2 py-1"><i class="fa fa-handshake-o"></i> Pay on Pickup</span>
+                                    {% if i.TotalAmount %}<small class="d-block text-muted">₹{{ i.TotalAmount }}</small>{% endif %}
+                                {% else %}
+                                    <a href="{% url 'bookingPayment' i.id %}" class="btn btn-warning btn-sm font-weight-bold py-1 px-2" style="font-size: 12px;">
+                                        <i class="fa fa-credit-card mr-1"></i> Pay Now
+                                    </a>
+                                {% endif %}
+                            </td>
+
+                            <td>{{i.PostingDate|date:"d-m-Y"}}</td>
                             <td align="center">
-                                <a class="btn btn-primary btn-sm" href="{% url 'mybookingDtls' i.id %}"><i class="fa fa-eye"></i></a>
+                                <a class="btn btn-primary btn-sm" href="{% url 'mybookingDtls' i.id %}" title="View Details"><i class="fa fa-eye"></i></a>
+                                <a class="btn btn-success btn-sm ml-1" href="{% url 'bookingInvoice' i.id %}" title="Download / View Slip"><i class="fa fa-download"></i></a>
                             </td>
                         </tr>
                         {% endfor %}

@@ -48,24 +48,69 @@
 
                             <th>Status</th>
                             {% if booking.Status == None %}
-                                <td>Not Update Yet</td>
-                            {% else%}
+                                <td><span class="badge badge-secondary px-2 py-1">Pending Approval</span></td>
+                            {% elif booking.Status == 'Confirm' %}
+                                <td><span class="badge badge-primary px-2 py-1"><i class="fa fa-check"></i> Confirmed</span></td>
+                            {% elif booking.Status == 'Completed' %}
+                                <td><span class="badge badge-success px-2 py-1" style="background-color: #28a745;"><i class="fa fa-check-circle"></i> Completed (Car Returned)</span></td>
+                            {% elif booking.Status == 'Cancel' %}
+                                <td><span class="badge badge-danger px-2 py-1"><i class="fa fa-times"></i> Cancelled</span></td>
+                            {% else %}
                                 <td>{{booking.Status}}</td>
                             {% endif %}
                         </tr>
 
                         <tr>
                             <th>Total Days</th>
-                            <td>{{ booking.ToDate|timeuntil:booking.FromDate }}</td>
+                            <td>{{ totaldays }} Day{% if totaldays > 1 %}s{% endif %}</td>
 
                             <th>Rent/Days</th>
-                            <td>{{booking.VehicleId.PricePerDay}}</td>
+                            <td>₹ {{booking.VehicleId.PricePerDay}}</td>
                         </tr>
                         <tr>
-                            <th colspan="3" style="text-align:center; color: red">Grand Total</th>
-                            <td>{{grandtotal}} Rs.</td>
+                            <th>Payment Status</th>
+                            <td>
+                                {% if booking.PaymentStatus == 'Paid' %}
+                                    <span class="badge badge-success px-3 py-1 font-weight-bold" style="font-size: 13px;"><i class="fa fa-check-circle mr-1"></i> PAID</span>
+                                {% elif booking.PaymentStatus == 'Pay on Pickup' %}
+                                    <span class="badge badge-info px-3 py-1 font-weight-bold" style="font-size: 13px;"><i class="fa fa-handshake-o mr-1"></i> Pay on Pickup</span>
+                                {% else %}
+                                    <span class="badge badge-warning px-3 py-1 font-weight-bold text-dark" style="font-size: 13px;"><i class="fa fa-clock-o mr-1"></i> PENDING</span>
+                                {% endif %}
+                            </td>
+
+                            <th>Payment Mode</th>
+                            <td>{{ booking.PaymentMode|default:"Not selected yet" }}</td>
+                        </tr>
+                        {% if booking.TransactionId %}
+                        <tr>
+                            <th>Transaction ID</th>
+                            <td colspan="3"><code class="font-weight-bold text-primary">{{ booking.TransactionId }}</code></td>
+                        </tr>
+                        {% endif %}
+                        <tr>
+                            <th colspan="3" style="text-align:center; color: #f77d0a; font-size: 18px;">Grand Total</th>
+                            <td style="font-size: 20px; font-weight: bold; color: #2b2e4a;">₹ {{grandtotal}}</td>
                         </tr>
                     </table>
+
+                    <div class="mt-4 text-center">
+                        {% if booking.PaymentStatus == 'Paid' or booking.PaymentStatus == 'Pay on Pickup' %}
+                            <a href="{% url 'bookingInvoice' booking.id %}" class="btn btn-primary font-weight-bold px-3 py-2 mr-2">
+                                <i class="fa fa-file-text-o mr-1"></i> View Slip
+                            </a>
+                            <a href="{% url 'downloadInvoicePDF' booking.id %}" class="btn btn-success font-weight-bold px-3 py-2 mr-2">
+                                <i class="fa fa-download mr-1"></i> Download Slip (PDF)
+                            </a>
+                        {% else %}
+                            <a href="{% url 'bookingPayment' booking.id %}" class="btn btn-warning font-weight-bold px-4 py-2 mr-2 text-dark">
+                                <i class="fa fa-credit-card mr-1"></i> Pay Now (₹ {{ grandtotal }})
+                            </a>
+                        {% endif %}
+                        <a href="{% url 'myBooking' %}" class="btn btn-secondary font-weight-bold px-4 py-2">
+                            <i class="fa fa-arrow-left mr-1"></i> Back to My Bookings
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>

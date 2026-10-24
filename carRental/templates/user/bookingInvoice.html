@@ -1,0 +1,204 @@
+{% extends 'userBase.html' %}
+{% block main %}
+{% load static %}
+
+<!-- Page Header Start -->
+<div class="container-fluid page-header mb-4 d-print-none">
+    <h1 class="display-3 text-uppercase text-white mb-3">Booking Invoice</h1>
+    <div class="d-inline-flex text-white">
+        <h6 class="text-uppercase m-0"><a class="text-white" href="{% url 'userindex' %}">Home</a></h6>
+        <h6 class="text-body m-0 px-3">/</h6>
+        <h6 class="text-uppercase text-body m-0">Invoice Receipt</h6>
+    </div>
+</div>
+<!-- Page Header End -->
+
+<div class="container py-4">
+    <!-- Success Banner -->
+    <div class="alert alert-success d-print-none shadow-sm py-3 px-4 mb-4" style="border-radius: 10px; background-color: #d1e7dd; border-color: #badbcc; color: #0f5132;">
+        <div class="d-flex align-items-center justify-content-between flex-wrap">
+            <div class="d-flex align-items-center">
+                <i class="fa fa-check-circle-o fa-3x mr-3 text-success"></i>
+                <div>
+                    <h4 class="alert-heading mb-1 font-weight-bold text-success">
+                        {% if booking.PaymentStatus == 'Paid' %}
+                            Payment Successful & Booking Confirmed!
+                        {% else %}
+                            Booking Confirmed (Pay on Pickup)!
+                        {% endif %}
+                    </h4>
+                    <p class="mb-0" style="font-size: 14px;">Your car reservation has been successfully processed. Thank you for choosing RideOnRent.</p>
+                </div>
+            </div>
+            <div class="mt-3 mt-md-0">
+                <a href="{% url 'downloadInvoicePDF' booking.id %}" class="btn btn-success font-weight-bold mr-2 shadow-sm">
+                    <i class="fa fa-download mr-1"></i> Download Slip (PDF)
+                </a>
+                <button onclick="window.print()" class="btn btn-outline-dark font-weight-bold mr-2">
+                    <i class="fa fa-print mr-1"></i> Print Slip
+                </button>
+                <a href="{% url 'myBooking' %}" class="btn btn-primary font-weight-bold">
+                    <i class="fa fa-list mr-1"></i> My Bookings
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Printable Invoice Card -->
+    <div class="card border-0 shadow" id="invoiceArea" style="border-radius: 8px; background: #ffffff; max-width: 850px; margin: 0 auto;">
+        <div class="card-body p-4" style="background: #ffffff;">
+            <!-- Header Section -->
+            <div class="row align-items-center pb-3 mb-3 border-bottom">
+                <div class="col-6">
+                    <h2 class="text-uppercase font-weight-bold mb-0 text-primary" style="font-size: 26px;">Ride<span class="text-dark">OnRent</span></h2>
+                    <p class="text-muted mb-0 font-weight-bold" style="font-size: 12px;">Car Rental Portal Management System</p>
+                    <small class="text-muted" style="font-size: 11px;">Support: support@rideonrent.com | +91 98765 43210</small>
+                </div>
+                <div class="col-6 text-right">
+                    <span class="badge badge-primary px-3 py-1 font-weight-bold" style="font-size: 13px; letter-spacing: 1px;">TAX INVOICE</span>
+                    <h5 class="text-dark mt-2 mb-0 font-weight-bold" style="font-size: 15px;">Invoice No: INV-{{ booking.BookingNumber }}</h5>
+                    <small class="text-muted" style="font-size: 11px;">Date: {{ booking.PostingDate|date:"d M Y, h:i A" }}</small>
+                </div>
+            </div>
+
+            <!-- Billed To & Booking Info -->
+            <div class="row mb-3 pb-2 border-bottom">
+                <div class="col-6">
+                    <h6 class="text-uppercase font-weight-bold text-muted mb-1" style="font-size: 11px; letter-spacing: 0.5px;">Customer Details:</h6>
+                    <h5 class="font-weight-bold text-dark mb-1" style="font-size: 16px;">{{ booking.user.user.first_name|default:"Customer" }} {{ booking.user.user.last_name|default:"" }}</h5>
+                    <p class="mb-1 text-muted" style="font-size: 13px;"><i class="fa fa-envelope text-primary mr-1"></i> {{ booking.user.user.username }}</p>
+                    <p class="mb-1 text-muted" style="font-size: 13px;">
+                        <i class="fa fa-phone text-primary mr-1"></i> 
+                        {% if booking.user.ContactNo and booking.user.ContactNo != 'None' %}{{ booking.user.ContactNo }}{% else %}Not Provided{% endif %}
+                    </p>
+                    <p class="mb-0 text-muted" style="font-size: 13px;">
+                        <i class="fa fa-map-marker text-primary mr-1"></i> 
+                        {% if booking.user.City and booking.user.City != 'None' %}
+                            {{ booking.user.Address|default:'' }}{% if booking.user.Address %}, {% endif %}{{ booking.user.City }}, {{ booking.user.Country|default:'India' }}
+                        {% else %}
+                            Registered Member
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="col-6 text-right">
+                    <h6 class="text-uppercase font-weight-bold text-muted mb-1" style="font-size: 11px; letter-spacing: 0.5px;">Payment Summary:</h6>
+                    <p class="mb-1" style="font-size: 13px;">
+                        Payment Status: 
+                        {% if booking.PaymentStatus == 'Paid' %}
+                            <span class="badge badge-success px-2 py-1 font-weight-bold"><i class="fa fa-check-circle"></i> PAID</span>
+                        {% elif booking.PaymentStatus == 'Pay on Pickup' %}
+                            <span class="badge badge-info px-2 py-1 font-weight-bold"><i class="fa fa-handshake-o"></i> PAY ON PICKUP</span>
+                        {% else %}
+                            <span class="badge badge-warning px-2 py-1 font-weight-bold">PENDING</span>
+                        {% endif %}
+                    </p>
+                    <p class="mb-1 text-dark" style="font-size: 13px;">Payment Mode: <strong class="text-primary">{{ booking.PaymentMode|default:"Online" }}</strong></p>
+                    <p class="mb-1 text-dark" style="font-size: 13px;">Transaction ID: <strong class="text-dark font-weight-bold" style="font-family: monospace;">{{ booking.TransactionId|default:"N/A" }}</strong></p>
+                    <p class="mb-0" style="font-size: 13px;">Booking Status: <span class="badge badge-success px-2 py-1">{{ booking.Status|default:"Confirmed" }}</span></p>
+                </div>
+            </div>
+
+            <!-- Itemized Table (No table-responsive so html2canvas captures 100% of rows and amounts) -->
+            <div class="mb-3">
+                <table class="table table-bordered mb-0" style="width: 100%; border: 1px solid #dee2e6;">
+                    <thead style="background-color: #f1f3f5;">
+                        <tr style="font-size: 12px; color: #212529;">
+                            <th style="width: 5%;">#</th>
+                            <th style="width: 40%;">Vehicle Description</th>
+                            <th style="width: 25%;" class="text-center">Rental Period</th>
+                            <th style="width: 10%;" class="text-center">Duration</th>
+                            <th style="width: 10%;" class="text-right">Rate / Day</th>
+                            <th style="width: 10%;" class="text-right">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody style="font-size: 13px;">
+                        <tr>
+                            <td>1</td>
+                            <td>
+                                <strong class="text-dark" style="font-size: 14px;">{{ booking.VehicleId.VehiclesTitle }}</strong>
+                                <div class="text-muted" style="font-size: 11px;">Brand: {{ booking.VehicleId.VehiclesBrand.BrandName }} | Year: {{ booking.VehicleId.ModelYear }} | Fuel: {{ booking.VehicleId.FuelType }}</div>
+                                <div class="text-muted" style="font-size: 11px;">Booking Number: #{{ booking.BookingNumber }}</div>
+                            </td>
+                            <td class="text-center" style="vertical-align: middle;">
+                                <strong>{{ booking.FromDate|date:"d M Y" }}</strong><br><small class="text-muted">to</small><br><strong>{{ booking.ToDate|date:"d M Y" }}</strong>
+                            </td>
+                            <td class="text-center font-weight-bold" style="vertical-align: middle;">
+                                {{ totaldays }} Day{% if totaldays > 1 %}s{% endif %}
+                            </td>
+                            <td class="text-right" style="vertical-align: middle;">
+                                ₹ {{ booking.VehicleId.PricePerDay }}
+                            </td>
+                            <td class="text-right font-weight-bold text-dark" style="vertical-align: middle; font-size: 14px;">
+                                ₹ {{ grandtotal }}
+                            </td>
+                        </tr>
+                    </tbody>
+                    <tfoot style="font-size: 13px;">
+                        <tr>
+                            <td colspan="4" style="border: 0;"></td>
+                            <td class="text-right font-weight-bold text-muted" style="background: #fafafa;">Subtotal:</td>
+                            <td class="text-right font-weight-bold text-dark" style="background: #fafafa;">₹ {{ grandtotal }}</td>
+                        </tr>
+                        <tr>
+                            <td colspan="4" style="border: 0;"></td>
+                            <td class="text-right font-weight-bold text-muted" style="background: #fafafa;">Taxes & GST:</td>
+                            <td class="text-right font-weight-bold text-success" style="background: #fafafa;">Included</td>
+                        </tr>
+                        <tr style="background-color: #f8f9fa;">
+                            <td colspan="4" style="border: 0;"></td>
+                            <td class="text-right font-weight-bold" style="font-size: 15px; color: #212529;">Grand Total:</td>
+                            <td class="text-right font-weight-bold text-primary" style="font-size: 18px;">₹ {{ grandtotal }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <!-- Important Terms & Conditions -->
+            <div class="p-2 px-3 rounded mb-3" style="font-size: 11px; background-color: #f8f9fa; border: 1px solid #e9ecef;">
+                <strong class="text-dark d-block mb-1"><i class="fa fa-info-circle mr-1 text-primary"></i> Rental Instructions & Terms:</strong>
+                <ul class="pl-3 mb-0 text-muted">
+                    <li>Please carry your original valid Driving License and Govt ID during vehicle pick-up.</li>
+                    <li>Vehicle return scheduled on or before: <strong>{{ booking.ToDate|date:"d M Y" }}</strong>.</li>
+                    <li>24/7 Roadside Assistance: <strong>1800-123-RENT</strong> | support@rideonrent.com</li>
+                </ul>
+            </div>
+
+            <!-- Signatures -->
+            <div class="row pt-2 align-items-center">
+                <div class="col-6">
+                    <p class="text-muted mb-0" style="font-size: 11px;">Computer-generated tax invoice. No signature required.</p>
+                </div>
+                <div class="col-6 text-right">
+                    <p class="font-weight-bold text-dark mb-0" style="font-size: 13px;">Authorized Signatory</p>
+                    <small class="text-muted" style="font-size: 11px;">RideOnRent Car Rental Portal</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+@media print {
+    body * {
+        visibility: hidden;
+    }
+    #invoiceArea, #invoiceArea * {
+        visibility: visible;
+    }
+    #invoiceArea {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        box-shadow: none !important;
+        border: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    .d-print-none {
+        display: none !important;
+    }
+}
+</style>
+
+{% endblock %}

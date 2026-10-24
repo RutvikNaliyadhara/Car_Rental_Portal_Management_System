@@ -57,7 +57,7 @@
                             <span>{{i.SeatingCapacity}}Seater</span>
                         </div>
                     </div>
-                    <a class="btn btn-primary px-3" href="">{{i.PricePerDay}} Rs./Day</a>
+                    <a class="btn btn-primary px-3" href="{% url 'vehicleDetails' i.id %}">{{i.PricePerDay}} Rs./Day</a>
                 </div>
                 </a>
             </div>

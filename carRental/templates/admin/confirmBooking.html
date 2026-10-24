@@ -40,7 +40,8 @@
                   {% endif %}
                   <td>{{i.PostingDate}}</td>
                   <td align="center">
-                    <a class="btn btn-primary btn-sm" href="{% url 'viewBooking' i.id %}"><i class="fa fa-eye"></i></a>
+                    <a class="btn btn-primary btn-sm" href="{% url 'viewBooking' i.id %}" title="View Details"><i class="fa fa-eye"></i></a>
+                    <a class="btn btn-success btn-sm ml-1" href="{% url 'releaseBooking' i.id %}?next=confirmBooking" onclick="return confirm('Release this car? It will be marked as Completed and immediately available for new bookings.')" title="Release Car (Mark Completed)"><i class="fa fa-key"></i> Release</a>
                   </td>
                 </tr>
               {% endfor %}

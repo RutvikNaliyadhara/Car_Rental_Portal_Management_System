@@ -81,6 +81,10 @@ class Booking(models.Model):
     ToDate = models.DateField(null=True)
     message = models.CharField(max_length=350, null=True)
     Status = models.CharField(max_length=150, null=True)
+    TotalAmount = models.CharField(max_length=150, null=True, blank=True)
+    PaymentStatus = models.CharField(max_length=100, default="Pending", null=True, blank=True)
+    PaymentMode = models.CharField(max_length=100, null=True, blank=True)
+    TransactionId = models.CharField(max_length=150, null=True, blank=True)
     PostingDate = models.DateTimeField(auto_now_add=True)
     LastUpdationDate = models.DateField(null=True)
 

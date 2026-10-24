@@ -183,28 +183,35 @@
         </div>
 
         <div class="col-lg-4 mb-5">
-            <form method="post">
+            <form method="post" id="bookingForm">
                 {% csrf_token %}
-                <div class="bg-secondary p-5">
+                <div class="bg-secondary p-5" style="border-radius: 8px;">
                     <h3 class="text-primary text-center mb-4">Book Now</h3>
 
+
                     <div class="form-group">
+                        <label class="font-weight-bold mb-1" style="font-size: 13px; color: #333;">From Date (Pick-up):</label>
                         <div class="date" data-target-input="nearest">
-                            <input type="date" name="FromDate" class="form-control p-4 datetimepicker-input" placeholder="From Date"
-                                   required>
+                            <input type="date" name="FromDate" id="fromDateInput" min="{{ today }}" class="form-control p-4 datetimepicker-input" placeholder="From Date" required>
                         </div>
                     </div>
                     <div class="form-group">
+                        <label class="font-weight-bold mb-1" style="font-size: 13px; color: #333;">To Date (Return):</label>
                         <div class="date" id="date1" data-target-input="nearest">
-                            <input type="date" name="ToDate" class="form-control p-4 datetimepicker-input" placeholder="To Date"
-                                   required>
+                            <input type="date" name="ToDate" id="toDateInput" min="{{ today }}" class="form-control p-4 datetimepicker-input" placeholder="To Date" required>
                         </div>
                     </div>
+
+                    <div id="dateAlertBox" style="display: none; font-size: 13px;" class="alert alert-danger py-2 px-3 mb-3">
+                        <span id="dateAlertText"></span>
+                    </div>
+
                     <div class="form-group">
-                        <textarea type="text" name="message" class="form-control p-4" placeholder="Message..." required></textarea>
+                        <label class="font-weight-bold mb-1" style="font-size: 13px; color: #333;">Message:</label>
+                        <textarea type="text" name="message" class="form-control p-4" placeholder="Message or Special Request..." required></textarea>
                     </div>
                     <div class="form-group mb-0">
-                        <button class="btn btn-primary btn-block" type="submit" style="height: 50px;">Book Now</button>
+                        <button class="btn btn-primary btn-block font-weight-bold" id="bookSubmitBtn" type="submit" style="height: 50px;">Book Now</button>
                     </div>
                 </div>
             </form>
@@ -251,9 +258,133 @@
     </div>
     <!-- Related Car End -->
 
+<script id="bookedRangesData" type="application/json">
+{{ booked_ranges_json|safe }}
+</script>
+
+<script>
+    const bookedRanges = JSON.parse(document.getElementById('bookedRangesData').textContent || '[]');
+    const fromInput = document.getElementById('fromDateInput');
+    const toInput = document.getElementById('toDateInput');
+    const alertBox = document.getElementById('dateAlertBox');
+    const alertText = document.getElementById('dateAlertText');
+    const bookBtn = document.getElementById('bookSubmitBtn');
+
+    function checkDateAvailability() {
+        const fromVal = fromInput.value;
+        const toVal = toInput.value;
+        alertBox.style.display = 'none';
+        alertText.innerHTML = '';
+        if (bookBtn) {
+            bookBtn.disabled = false;
+            bookBtn.style.opacity = '1';
+            bookBtn.style.cursor = 'pointer';
+        }
+
+        if (fromVal) {
+            toInput.min = fromVal;
+        }
+
+        // 1. Check if pick-up date alone falls in a booked range
+        if (fromVal && !toVal) {
+            for (let i = 0; i < bookedRanges.length; i++) {
+                const b = bookedRanges[i];
+                if (fromVal >= b.from && fromVal <= b.to) {
+                    alertText.innerHTML = '<i class="fa fa-ban mr-1"></i> <strong>Already Booked:</strong> This car is already booked on this date (from <b>' + b.from_display + '</b> to <b>' + b.to_display + '</b>). Please choose another date!';
+                    alertBox.style.display = 'block';
+                    if (bookBtn) {
+                        bookBtn.disabled = true;
+                        bookBtn.style.opacity = '0.65';
+                        bookBtn.style.cursor = 'not-allowed';
+                    }
+                    return;
+                }
+            }
+        }
+
+        // 2. Return date earlier than pick-up date
+        if (fromVal && toVal && toVal < fromVal) {
+            alertText.innerHTML = '<i class="fa fa-exclamation-triangle mr-1"></i> <strong>Invalid Dates:</strong> Return Date cannot be earlier than Pick-up Date!';
+            alertBox.style.display = 'block';
+            if (bookBtn) {
+                bookBtn.disabled = true;
+                bookBtn.style.opacity = '0.65';
+                bookBtn.style.cursor = 'not-allowed';
+            }
+            return;
+        }
+
+        // 3. Full range overlap check
+        if (fromVal && toVal) {
+            for (let i = 0; i < bookedRanges.length; i++) {
+                const b = bookedRanges[i];
+                if (b.from <= toVal && b.to >= fromVal) {
+                    alertText.innerHTML = '<i class="fa fa-ban mr-1"></i> <strong>Already Booked:</strong> This car is already booked from <b>' + b.from_display + '</b> to <b>' + b.to_display + '</b>. Please choose another date!';
+                    alertBox.style.display = 'block';
+                    if (bookBtn) {
+                        bookBtn.disabled = true;
+                        bookBtn.style.opacity = '0.65';
+                        bookBtn.style.cursor = 'not-allowed';
+                    }
+                    return;
+                }
+            }
+        }
+    }
+
+    if (fromInput) {
+        fromInput.addEventListener('change', checkDateAvailability);
+        fromInput.addEventListener('input', checkDateAvailability);
+    }
+    if (toInput) {
+        toInput.addEventListener('change', checkDateAvailability);
+        toInput.addEventListener('input', checkDateAvailability);
+    }
+
+    const bForm = document.getElementById('bookingForm');
+    if (bForm) {
+        bForm.addEventListener('submit', function(e) {
+            const fromVal = fromInput.value;
+            const toVal = toInput.value;
+            if (toVal < fromVal) {
+                e.preventDefault();
+                alert('Return Date cannot be before Pick-up Date.');
+                return false;
+            }
+            for (let i = 0; i < bookedRanges.length; i++) {
+                const b = bookedRanges[i];
+                if (b.from <= toVal && b.to >= fromVal) {
+                    e.preventDefault();
+                    alert('⚠️ This car is already booked from ' + b.from_display + ' to ' + b.to_display + '.\nPlease select another date!');
+                    return false;
+                }
+            }
+        });
+    }
+</script>
+
+{% if error == "already_booked" %}
+<script>
+    alert('⚠️ This car is ALREADY BOOKED for the selected dates ({{ conflict_info }}).\nPlease select different dates.');
+</script>
+{% endif %}
+
+{% if error == "invalid_dates" %}
+<script>
+    alert('⚠️ Return Date (To Date) cannot be earlier than Pick-up Date (From Date).');
+</script>
+{% endif %}
+
+{% if error == "past_date" %}
+<script>
+    alert('⚠️ Booking date cannot be in the past.');
+</script>
+{% endif %}
+
 {% if error == "no" %}
 <script>
-    alert('Booking Successful. Your Booking Number is {{bookingNo}}');
+    alert('Booking Initiated! Your Booking Number is {{bookingNo}}.\nPlease proceed to complete payment.');
+    window.location.href = "{% url 'bookingPayment' booking_id %}";
 </script>
 {% endif %}
 

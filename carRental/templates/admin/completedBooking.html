@@ -1,0 +1,56 @@
+{% extends 'adminNavbar.html' %}
+{% block main %}
+
+<section class="content">
+  <div class="row">
+     <div class="col-xs-12">
+        <div class="box">
+          <div class="box-header">
+             <h3 class="box-title"><i class="fa fa-check-circle text-success"></i> Completed / Released Bookings</h3>
+
+           <div class="box-body">
+            <table id="example1" class="table table-bordered table-striped">
+              <thead>
+                <tr style="background-color: #c5c5c5;">
+                 <th>#</th>
+                 <th><i class="fa fa-user"></i> Full Name</th>
+                 <th><i class="fa fa-list-ol"></i> Booking No.</th>
+                 <th><i class="fa fa-cab"></i> Vehicle</th>
+                 <th><i class="fa fa-calendar"></i> From Date</th>
+                 <th><i class="fa fa-calendar"></i> To Date</th>
+                 <th><i class="fa fa-info-circle"></i> Status</th>
+                 <th><i class="fa fa-calendar"></i> Updation Date</th>
+                 <th>Action</th>
+                </tr>
+              </thead>
+
+              <tbody>
+              {% for i in booking %}
+                <tr>
+                  <td>{{forloop.counter}}</td>
+                  <td>{{i.user.user.first_name}} {{i.user.user.last_name}}</td>
+                  <td><strong>{{i.BookingNumber}}</strong></td>
+                  <td>{{i.VehicleId.VehiclesBrand.BrandName}}, {{i.VehicleId.VehiclesTitle}}</td>
+                  <td>{{i.FromDate|date:"d-m-Y"}}</td>
+                  <td>{{i.ToDate|date:"d-m-Y"}}</td>
+                  <td><span class="badge badge-success" style="background-color: #28a745;"><i class="fa fa-check"></i> Completed (Car Released)</span></td>
+                  <td>{{i.LastUpdationDate|date:"d-m-Y"|default:i.PostingDate|date:"d-m-Y"}}</td>
+                  <td align="center">
+                    <a class="btn btn-primary btn-sm" href="{% url 'viewBooking' i.id %}" title="View Details"><i class="fa fa-eye"></i> View</a>
+                  </td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="9" class="text-center text-muted py-3">No completed bookings yet.</td>
+                </tr>
+              {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </div>
+     </div>
+  </div>
+  </div>
+</section>
+
+{% endblock %}
